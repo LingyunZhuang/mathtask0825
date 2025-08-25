@@ -1,0 +1,272 @@
+code
+Html
+<!DOCTYPE html>
+<html>
+<head>
+<title>数学小游戏 v6.0</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  .header {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    text-align: right;
+  }
+  #timer {
+    font-size: 28px;
+    font-weight: bold;
+    color: #d9534f;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+  }
+  #score-board {
+    font-size: 22px;
+    font-weight: bold;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  #game-container {
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 50vw;
+    min-width: 450px;
+  }
+  #question {
+    font-size: 80px;
+    margin-bottom: 30px;
+    font-weight: bold;
+    color: #333;
+  }
+  #answer-input {
+    width: 200px;
+    height: 70px;
+    font-size: 50px;
+    text-align: center;
+    margin-bottom: 30px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+  }
+  #answer-input:disabled {
+    background-color: #eee;
+  }
+  #submit-button {
+    padding: 15px 30px;
+    font-size: 24px;
+    cursor: pointer;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 8px;
+  }
+  #submit-button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+  }
+  #result {
+    margin-top: 25px;
+    font-size: 26px;
+    font-weight: bold;
+    height: 120px;
+  }
+  .survey-link-container {
+    margin-top: 20px;
+  }
+  .survey-link-container a {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 20px;
+    color: white;
+    background-color: #28a745;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+  }
+  .survey-link-container a:hover {
+    background-color: #218838;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div id="timer">剩余时间: 01:00</div>
+  <div id="score-board">
+    <div>答对: <span id="correct-count">0</span></div>
+    <div>答错: <span id="incorrect-count">0</span></div>
+    <div>总分: <span id="total-score">0</span></div>
+  </div>
+</div>
+
+<div id="game-container">
+  <div id="question"></div>
+  <input type="number" id="answer-input" autofocus>
+  <br>
+  <button id="submit-button">提交</button>
+  <div id="result"></div>
+</div>
+
+<script>
+  // --- DOM Elements ---
+  const questionElement = document.getElementById('question');
+  const answerInput = document.getElementById('answer-input');
+  const submitButton = document.getElementById('submit-button');
+  const resultElement = document.getElementById('result');
+  const correctCountElement = document.getElementById('correct-count');
+  const incorrectCountElement = document.getElementById('incorrect-count');
+  const totalScoreElement = document.getElementById('total-score');
+  const timerElement = document.getElementById('timer');
+
+  // --- Game State Variables ---
+  let correctCount = 0;
+  let incorrectCount = 0;
+  let currentAnswer = 0;
+  let isGameActive = true;
+
+  // --- Timer Variables ---
+  const GAME_DURATION = 60;
+  let timeLeft = GAME_DURATION;
+  let timerInterval = null;
+
+  // --- Game Logic Functions ---
+
+  // --- 重点改动：题目生成函数 ---
+  function generateQuestion() {
+    let num1, num2;
+    const operator = Math.random() < 0.5 ? '+' : '-';
+
+    // 80%的概率生成简单题目
+    if (Math.random() < 0.8) {
+      // 简单题目：50以内的加减法
+      if (operator === '+') {
+        num1 = Math.floor(Math.random() * 40) + 1; // 生成 1 到 40 的数
+        num2 = Math.floor(Math.random() * (50 - num1)) + 1; // 保证和小于等于51
+      } else { // 减法
+        num1 = Math.floor(Math.random() * 49) + 2; // 生成 2 到 50 的数
+        num2 = Math.floor(Math.random() * (num1 - 1)) + 1; // 保证减数小于被减数，结果为正
+      }
+    } else {
+      // 困难题目：100以内的加减法
+      num1 = Math.floor(Math.random() * 60) + 40; // 生成 40 到 99 的数
+      num2 = Math.floor(Math.random() * 80) + 10; // 生成 10 到 89 的数
+    }
+
+    // 对于困难模式的减法，如果减数更大，则交换两者位置以避免负数
+    if (operator === '-' && num1 < num2) {
+      [num1, num2] = [num2, num1]; // ES6 语法快速交换变量
+    }
+    
+    // 更新题目和答案
+    questionElement.textContent = `${num1} ${operator} ${num2}`;
+    currentAnswer = operator === '+' ? num1 + num2 : num1 - num2;
+
+    answerInput.value = '';
+    resultElement.textContent = '';
+    answerInput.focus();
+  }
+
+  function updateScore() {
+    const totalScore = correctCount - incorrectCount;
+    correctCountElement.textContent = correctCount;
+    incorrectCountElement.textContent = incorrectCount;
+    totalScoreElement.textContent = totalScore;
+  }
+
+  function checkAnswer() {
+    if (!isGameActive) return;
+
+    const userAnswer = parseInt(answerInput.value);
+    if (isNaN(userAnswer)) {
+      resultElement.textContent = "请输入一个数字！";
+      resultElement.style.color = 'orange';
+      return;
+    }
+
+    if (userAnswer === currentAnswer) {
+      correctCount++;
+      resultElement.textContent = "正确！";
+      resultElement.style.color = 'green';
+    } else {
+      incorrectCount++;
+      resultElement.textContent = "错误！";
+      resultElement.style.color = 'red';
+    }
+
+    updateScore();
+    setTimeout(generateQuestion, 1000);
+  }
+
+  function endGame() {
+    clearInterval(timerInterval);
+    isGameActive = false;
+    
+    answerInput.disabled = true;
+    submitButton.disabled = true;
+
+    const finalTotalScore = correctCount - incorrectCount;
+    questionElement.textContent = "时间到！";
+
+    // 更新URL
+    const scoreString = `${correctCount}_${incorrectCount}_${finalTotalScore}`;
+    const newUrl = `${window.location.pathname}?scores=${scoreString}`;
+    history.replaceState(null, '', newUrl);
+
+    // 显示最终得分和问卷链接
+    const surveyLink = "https://www.wjx.cn/newwjx.aspx"; // <-- 在这里替换成您真实的问卷链接
+
+    resultElement.innerHTML = `
+      <div>游戏结束！<br>最终总分: ${finalTotalScore}</div>
+      <div class="survey-link-container">
+        <a href="${surveyLink}" target="_blank">点击这里完成问卷</a>
+      </div>
+    `;
+    resultElement.style.color = '#007bff';
+  }
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+      timerElement.textContent = `剩余时间: 0${minutes}:${formattedSeconds}`;
+      
+      if (timeLeft <= 0) {
+        endGame();
+      }
+    }, 1000);
+  }
+
+  // --- Event Listeners ---
+  submitButton.addEventListener('click', checkAnswer);
+  answerInput.addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      checkAnswer();
+    }
+  });
+
+  // --- Initialize Game ---
+  generateQuestion();
+  startTimer();
+
+</script>
+
+</body>
+</html>
