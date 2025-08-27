@@ -1,12 +1,11 @@
-code
-Html
 <!DOCTYPE html>
 <html>
 <head>
-<title>数学小游戏 v6.0</title>
+<title>数学小游戏 v7.0</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
+  /* CSS样式部分与上一版完全相同，这里保持不变 */
   body {
     font-family: sans-serif;
     display: flex;
@@ -106,6 +105,7 @@ Html
 </head>
 <body>
 
+<!-- HTML结构部分也保持不变 -->
 <div class="header">
   <div id="timer">剩余时间: 01:00</div>
   <div id="score-board">
@@ -124,7 +124,7 @@ Html
 </div>
 
 <script>
-  // --- DOM Elements ---
+  // --- 其他JS代码保持不变 ---
   const questionElement = document.getElementById('question');
   const answerInput = document.getElementById('answer-input');
   const submitButton = document.getElementById('submit-button');
@@ -134,71 +134,53 @@ Html
   const totalScoreElement = document.getElementById('total-score');
   const timerElement = document.getElementById('timer');
 
-  // --- Game State Variables ---
   let correctCount = 0;
   let incorrectCount = 0;
   let currentAnswer = 0;
   let isGameActive = true;
 
-  // --- Timer Variables ---
   const GAME_DURATION = 60;
   let timeLeft = GAME_DURATION;
   let timerInterval = null;
-
-  // --- Game Logic Functions ---
-
-  // --- 重点改动：题目生成函数 ---
-  function generateQuestion() {
+  
+  function generateQuestion() { /* ... 此函数无改动 ... */ 
     let num1, num2;
     const operator = Math.random() < 0.5 ? '+' : '-';
-
-    // 80%的概率生成简单题目
     if (Math.random() < 0.8) {
-      // 简单题目：50以内的加减法
       if (operator === '+') {
-        num1 = Math.floor(Math.random() * 40) + 1; // 生成 1 到 40 的数
-        num2 = Math.floor(Math.random() * (50 - num1)) + 1; // 保证和小于等于51
-      } else { // 减法
-        num1 = Math.floor(Math.random() * 49) + 2; // 生成 2 到 50 的数
-        num2 = Math.floor(Math.random() * (num1 - 1)) + 1; // 保证减数小于被减数，结果为正
+        num1 = Math.floor(Math.random() * 40) + 1;
+        num2 = Math.floor(Math.random() * (50 - num1)) + 1;
+      } else {
+        num1 = Math.floor(Math.random() * 49) + 2;
+        num2 = Math.floor(Math.random() * (num1 - 1)) + 1;
       }
     } else {
-      // 困难题目：100以内的加减法
-      num1 = Math.floor(Math.random() * 60) + 40; // 生成 40 到 99 的数
-      num2 = Math.floor(Math.random() * 80) + 10; // 生成 10 到 89 的数
+      num1 = Math.floor(Math.random() * 60) + 40;
+      num2 = Math.floor(Math.random() * 80) + 10;
     }
-
-    // 对于困难模式的减法，如果减数更大，则交换两者位置以避免负数
     if (operator === '-' && num1 < num2) {
-      [num1, num2] = [num2, num1]; // ES6 语法快速交换变量
+      [num1, num2] = [num2, num1];
     }
-    
-    // 更新题目和答案
     questionElement.textContent = `${num1} ${operator} ${num2}`;
     currentAnswer = operator === '+' ? num1 + num2 : num1 - num2;
-
     answerInput.value = '';
     resultElement.textContent = '';
     answerInput.focus();
   }
-
-  function updateScore() {
+  function updateScore() { /* ... 此函数无改动 ... */ 
     const totalScore = correctCount - incorrectCount;
     correctCountElement.textContent = correctCount;
     incorrectCountElement.textContent = incorrectCount;
     totalScoreElement.textContent = totalScore;
   }
-
-  function checkAnswer() {
+  function checkAnswer() { /* ... 此函数无改动 ... */
     if (!isGameActive) return;
-
     const userAnswer = parseInt(answerInput.value);
     if (isNaN(userAnswer)) {
       resultElement.textContent = "请输入一个数字！";
       resultElement.style.color = 'orange';
       return;
     }
-
     if (userAnswer === currentAnswer) {
       correctCount++;
       resultElement.textContent = "正确！";
@@ -208,11 +190,11 @@ Html
       resultElement.textContent = "错误！";
       resultElement.style.color = 'red';
     }
-
     updateScore();
     setTimeout(generateQuestion, 1000);
   }
-
+  
+  // --- 重点改动：endGame 函数 ---
   function endGame() {
     clearInterval(timerInterval);
     isGameActive = false;
@@ -223,24 +205,35 @@ Html
     const finalTotalScore = correctCount - incorrectCount;
     questionElement.textContent = "时间到！";
 
-    // 更新URL
+    // 更新浏览器地址栏的URL (用于您自己记录)
     const scoreString = `${correctCount}_${incorrectCount}_${finalTotalScore}`;
     const newUrl = `${window.location.pathname}?scores=${scoreString}`;
     history.replaceState(null, '', newUrl);
 
-    // 显示最终得分和问卷链接
-    const surveyLink = "https://www.credamo.com/s/qaYvYnano"; // <-- 在这里替换成您真实的问卷链接
+    // --- 核心改动开始 ---
 
+    // 1. 在这里定义您的问卷的【基础】链接 (末尾不要带?或&)
+    const surveyLinkBase = "https://www.wjx.cn/newwjx.aspx"; // <-- 在这里替换成您真实的问卷链接
+
+    // 2. 定义清晰的参数名
+    const correctParam = "correct";
+    const incorrectParam = "incorrect";
+    const totalParam = "total";
+
+    // 3. 构建包含所有参数的最终问卷链接
+    const finalSurveyLink = `${surveyLinkBase}?${correctParam}=${correctCount}&${incorrectParam}=${incorrectCount}&${totalParam}=${finalTotalScore}`;
+
+    // 4. 将构建好的链接放入按钮中
     resultElement.innerHTML = `
       <div>游戏结束！<br>最终总分: ${finalTotalScore}</div>
       <div class="survey-link-container">
-        <a href="${surveyLink}" target="_blank">点击这里完成问卷</a>
+        <a href="${finalSurveyLink}" target="_blank">点击这里完成问卷</a>
       </div>
     `;
     resultElement.style.color = '#007bff';
   }
 
-  function startTimer() {
+  function startTimer() { /* ... 此函数无改动 ... */
     timerInterval = setInterval(() => {
       timeLeft--;
       const minutes = Math.floor(timeLeft / 60);
