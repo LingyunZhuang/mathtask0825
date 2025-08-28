@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>数学小游戏 v7.0</title>
+<title>数学小游戏 v10.0 (Final)</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  /* CSS样式部分与上一版完全相同，这里保持不变 */
+  /* CSS样式无任何改动 */
   body {
     font-family: sans-serif;
     display: flex;
@@ -105,7 +105,7 @@
 </head>
 <body>
 
-<!-- HTML结构部分也保持不变 -->
+<!-- HTML结构无任何改动 -->
 <div class="header">
   <div id="timer">剩余时间: 10:00</div>
   <div id="score-board">
@@ -124,7 +124,7 @@
 </div>
 
 <script>
-  // --- 其他JS代码保持不变 ---
+  // --- DOM Elements ---
   const questionElement = document.getElementById('question');
   const answerInput = document.getElementById('answer-input');
   const submitButton = document.getElementById('submit-button');
@@ -134,53 +134,73 @@
   const totalScoreElement = document.getElementById('total-score');
   const timerElement = document.getElementById('timer');
 
+  // --- Game State Variables ---
   let correctCount = 0;
   let incorrectCount = 0;
   let currentAnswer = 0;
   let isGameActive = true;
+  let isTransitioning = false;
 
+  // --- Timer Variables ---
   const GAME_DURATION = 600;
   let timeLeft = GAME_DURATION;
   let timerInterval = null;
   
-  function generateQuestion() { /* ... 此函数无改动 ... */ 
-    let num1, num2;
-    const operator = Math.random() < 0.5 ? '+' : '-';
-    if (Math.random() < 0.8) {
-      if (operator === '+') {
-        num1 = Math.floor(Math.random() * 40) + 1;
-        num2 = Math.floor(Math.random() * (50 - num1)) + 1;
+  // --- 重点改动: generateQuestion 函数 ---
+  function generateQuestion() {
+    // 只有在游戏仍在进行时，才执行任何操作
+    if (isGameActive) {
+      resultElement.textContent = ''; // <-- 这行代码被移到了判断内部
+      let num1, num2;
+      const operator = Math.random() < 0.5 ? '+' : '-';
+      if (Math.random() < 0.8) {
+        if (operator === '+') {
+          num1 = Math.floor(Math.random() * 40) + 1;
+          num2 = Math.floor(Math.random() * (50 - num1)) + 1;
+        } else {
+          num1 = Math.floor(Math.random() * 49) + 2;
+          num2 = Math.floor(Math.random() * (num1 - 1)) + 1;
+        }
       } else {
-        num1 = Math.floor(Math.random() * 49) + 2;
-        num2 = Math.floor(Math.random() * (num1 - 1)) + 1;
+        num1 = Math.floor(Math.random() * 60) + 40;
+        num2 = Math.floor(Math.random() * 80) + 10;
       }
-    } else {
-      num1 = Math.floor(Math.random() * 60) + 40;
-      num2 = Math.floor(Math.random() * 80) + 10;
+      if (operator === '-' && num1 < num2) {
+        [num1, num2] = [num2, num1];
+      }
+      questionElement.textContent = `${num1} ${operator} ${num2}`;
+      currentAnswer = operator === '+' ? num1 + num2 : num1 - num2;
+      answerInput.value = '';
+
+      answerInput.disabled = false;
+      submitButton.disabled = false;
+      answerInput.focus();
+      isTransitioning = false;
     }
-    if (operator === '-' && num1 < num2) {
-      [num1, num2] = [num2, num1];
-    }
-    questionElement.textContent = `${num1} ${operator} ${num2}`;
-    currentAnswer = operator === '+' ? num1 + num2 : num1 - num2;
-    answerInput.value = '';
-    resultElement.textContent = '';
-    answerInput.focus();
   }
-  function updateScore() { /* ... 此函数无改动 ... */ 
+
+  function updateScore() {
     const totalScore = correctCount - incorrectCount;
     correctCountElement.textContent = correctCount;
     incorrectCountElement.textContent = incorrectCount;
     totalScoreElement.textContent = totalScore;
   }
-  function checkAnswer() { /* ... 此函数无改动 ... */
-    if (!isGameActive) return;
+
+  function checkAnswer() {
+    if (isTransitioning || !isGameActive) return;
+
     const userAnswer = parseInt(answerInput.value);
+
     if (isNaN(userAnswer)) {
-      resultElement.textContent = "请输入一个数字！";
+      resultElement.textContent = "请输入答案！";
       resultElement.style.color = 'orange';
       return;
     }
+
+    isTransitioning = true;
+    answerInput.disabled = true;
+    submitButton.disabled = true;
+
     if (userAnswer === currentAnswer) {
       correctCount++;
       resultElement.textContent = "正确！";
@@ -190,14 +210,14 @@
       resultElement.textContent = "错误！";
       resultElement.style.color = 'red';
     }
+    
     updateScore();
     setTimeout(generateQuestion, 1000);
   }
   
-  // --- 重点改动：endGame 函数 ---
   function endGame() {
-    clearInterval(timerInterval);
     isGameActive = false;
+    clearInterval(timerInterval);
     
     answerInput.disabled = true;
     submitButton.disabled = true;
@@ -205,26 +225,18 @@
     const finalTotalScore = correctCount - incorrectCount;
     questionElement.textContent = "时间到！";
 
-    // 更新浏览器地址栏的URL (用于您自己记录)
     const scoreString = `${correctCount}_${incorrectCount}_${finalTotalScore}`;
     const newUrl = `${window.location.pathname}?scores=${scoreString}`;
     history.replaceState(null, '', newUrl);
 
-    // --- 核心改动开始 ---
+    const surveyLinkBase = "https://www.credamo.com/s/imeMBrano";
 
-    // 1. 在这里定义您的问卷的【基础】链接 (末尾不要带?或&)
-    const surveyLinkBase = "https://www.credamo.com/s/imeMBrano"; // <-- 在这里替换成您真实的问卷链接
-  
-
-    // 2. 定义清晰的参数名
     const correctParam = "correct";
     const incorrectParam = "incorrect";
     const totalParam = "total";
 
-    // 3. 构建包含所有参数的最终问卷链接
     const finalSurveyLink = `${surveyLinkBase}?${correctParam}=${correctCount}&${incorrectParam}=${incorrectCount}&${totalParam}=${finalTotalScore}`;
 
-    // 4. 将构建好的链接放入按钮中
     resultElement.innerHTML = `
       <div>游戏结束！<br>最终总分: ${finalTotalScore}</div>
       <div class="survey-link-container">
@@ -234,13 +246,14 @@
     resultElement.style.color = '#007bff';
   }
 
-  function startTimer() { /* ... 此函数无改动 ... */
+  function startTimer() {
     timerInterval = setInterval(() => {
       timeLeft--;
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
-      const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
-      timerElement.textContent = `剩余时间: 0${minutes}:${formattedSeconds}`;
+      const formattedMinutes = minutes.toString().padStart(2, '0');
+      const formattedSeconds = seconds.toString().padStart(2, '0');
+      timerElement.textContent = `剩余时间: ${formattedMinutes}:${formattedSeconds}`;
       
       if (timeLeft <= 0) {
         endGame();
@@ -248,7 +261,6 @@
     }, 1000);
   }
 
-  // --- Event Listeners ---
   submitButton.addEventListener('click', checkAnswer);
   answerInput.addEventListener('keyup', function(event) {
     if (event.key === 'Enter') {
@@ -256,7 +268,6 @@
     }
   });
 
-  // --- Initialize Game ---
   generateQuestion();
   startTimer();
 
